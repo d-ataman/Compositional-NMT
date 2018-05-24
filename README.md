@@ -1,17 +1,9 @@
-# OpenNMT-py: Open-Source Neural Machine Translation
+# Compositional NMT based on OpenNMT-py, the Open-Source Neural Machine Translation Toolkit
 
 [![Build Status](https://travis-ci.org/OpenNMT/OpenNMT-py.svg?branch=master)](https://travis-ci.org/OpenNMT/OpenNMT-py)
 
-This is a [Pytorch](https://github.com/pytorch/pytorch)
-port of [OpenNMT](https://github.com/OpenNMT/OpenNMT),
-an open-source (MIT) neural machine translation system. It is designed to be research friendly to try out new ideas in translation, summary, image-to-text, morphology, and many other domains.
-
-
 OpenNMT-py is run as a collaborative open-source project. It is currently maintained by [Sasha Rush](http://github.com/srush) (Cambridge, MA), [Ben Peters](http://github.com/bpopeters) (Saarbrücken), and [Jianyu Zhan](http://github.com/jianyuzhan) (Shenzhen). The original code was written by [Adam Lerer](http://github.com/adamlerer) (NYC). Codebase is nearing a stable 0.1 version. We currently recommend forking if you want stable code.
 
-We love contributions. Please consult the Issues page for any [Contributions Welcome](https://github.com/OpenNMT/OpenNMT-py/issues?q=is%3Aissue+is%3Aopen+label%3A%22contributions+welcome%22) tagged post. 
-
-<center style="padding: 40px"><img width="70%" src="http://opennmt.github.io/simple-attn.png" /></center>
 
 
 Table of Contents
@@ -31,8 +23,12 @@ pip install -r requirements.txt
 
 ## Features
 
-The following OpenNMT features are implemented:
+This version has the following additional OpenNMT feature:
 
+- Compositional Source Word Embeddings
+  To activate: Select -data_type text-trigram during preprocessing and -model_type text-trigram during training and translation 
+
+Previos features:
 - [data preprocessing](http://opennmt.net/OpenNMT-py/options/preprocess.html)
 - [Inference (translation) with batching and beam search](http://opennmt.net/OpenNMT-py/options/translate.html)
 - [Multiple source and target RNN (lstm/gru) types and attention (dotprod/mlp) types](http://opennmt.net/OpenNMT-py/options/train.html#model-encoder-decoder)
@@ -135,4 +131,15 @@ The following pretrained models can be downloaded and used with translate.py (Th
   doi       = {10.18653/v1/P17-4012}
 }
 ```
-# Compositional-NMT
+
+```
+@inproceedings{eamt,
+  author    = {Ataman Duygu and
+               Mattia A. Di Gangi and
+               Marcello Federico},
+  title     = {Compositional Source Word Representations for Neural Machine Translation},
+  booktitle = {Proc. EAMT},
+  year      = {2018}
+}
+```
+
