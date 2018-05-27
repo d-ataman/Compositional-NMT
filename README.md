@@ -1,5 +1,5 @@
 # Compositional Neural Machine Translation in PyTorch
-# based on the OpenNMT-py Toolkit
+## based on the OpenNMT-py Toolkit
 
 [![Build Status](https://travis-ci.org/OpenNMT/OpenNMT-py.svg?branch=master)](https://travis-ci.org/OpenNMT/OpenNMT-py)
 
