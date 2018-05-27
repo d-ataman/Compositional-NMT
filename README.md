@@ -1,4 +1,5 @@
-# Compositional NMT based on OpenNMT-py, the Open-Source Neural Machine Translation Toolkit
+# Compositional Neural Machine Translation in PyTorch
+# based on the OpenNMT-py Toolkit
 
 [![Build Status](https://travis-ci.org/OpenNMT/OpenNMT-py.svg?branch=master)](https://travis-ci.org/OpenNMT/OpenNMT-py)
 
@@ -25,10 +26,16 @@ pip install -r requirements.txt
 
 This version has the following additional OpenNMT feature:
 
-- Compositional Source Word Embeddings
-  To activate: Select -data_type text-trigram during preprocessing and -model_type text-trigram during training and translation 
+### Compositional Source Word Embeddings
+  To activate: 
+  Select 
+  
+  ```-data_type text-trigram``` in the settings of preprocess.py 
+  and 
+  ```-model_type text-trigram``` during training and translation 
 
-Previos features:
+
+Previous features:
 - [data preprocessing](http://opennmt.net/OpenNMT-py/options/preprocess.html)
 - [Inference (translation) with batching and beam search](http://opennmt.net/OpenNMT-py/options/translate.html)
 - [Multiple source and target RNN (lstm/gru) types and attention (dotprod/mlp) types](http://opennmt.net/OpenNMT-py/options/train.html#model-encoder-decoder)
@@ -115,6 +122,19 @@ The following pretrained models can be downloaded and used with translate.py (Th
 
 ## Citation
 
+If you use this model, please cite:
+
+```
+@inproceedings{eamt,
+  author    = {Ataman Duygu and
+               Mattia A. Di Gangi and
+               Marcello Federico},
+  title     = {Compositional Source Word Representations for Neural Machine Translation},
+  booktitle = {Proceedings of the 21st Annual Conference of the European Association for Machine Translation},
+  pages     = {31--40},
+  year      = {2018}
+}
+```
 [OpenNMT technical report](https://doi.org/10.18653/v1/P17-4012)
 
 ```
@@ -131,15 +151,3 @@ The following pretrained models can be downloaded and used with translate.py (Th
   doi       = {10.18653/v1/P17-4012}
 }
 ```
-
-```
-@inproceedings{eamt,
-  author    = {Ataman Duygu and
-               Mattia A. Di Gangi and
-               Marcello Federico},
-  title     = {Compositional Source Word Representations for Neural Machine Translation},
-  booktitle = {Proc. EAMT},
-  year      = {2018}
-}
-```
-
