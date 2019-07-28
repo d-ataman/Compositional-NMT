@@ -96,7 +96,7 @@ class Translator(object):
             _, src_lengths = batch.src
             enc_states, memory_bank = self.model.encoder(src, src_lengths)
             dec_states = self.model.decoder.init_decoder_state(
-                                        src, memory_bank, enc_states)
+                                        src, memory_bank, enc_states, self.model.decoder.num_layers)
         elif data_type == "text-trigram":
             src_lengths = batch.src[1]
             enc_states, memory_bank = self.model.encoder(src, src_lengths, batch_size=batch_size)

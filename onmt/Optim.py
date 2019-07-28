@@ -112,3 +112,4 @@ class Optim(object):
 
         self.last_ppl = ppl
         self.optimizer.param_groups[0]['lr'] = self.lr
+        self.start_decay = False

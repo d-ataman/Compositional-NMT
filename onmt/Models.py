@@ -251,11 +251,17 @@ class RNNDecoderBase(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
         # Build the RNN.
-        self.rnn = self._build_rnn(rnn_type,
+        self.rnn1 = self._build_rnn(rnn_type,
                                    input_size=self._input_size,
                                    hidden_size=hidden_size,
-                                   num_layers=num_layers,
+                                   num_layers=1,
                                    dropout=dropout)
+        self.rnn2 = self._build_rnn(rnn_type,
+                                   input_size=self._input_size,
+                                   hidden_size=hidden_size,
+                                   num_layers=1,
+                                   dropout=dropout)
+
 
         # Set up the context gate.
         self.context_gate = None
@@ -326,7 +332,7 @@ class RNNDecoderBase(nn.Module):
 
         return decoder_outputs, state, attns
 
-    def init_decoder_state(self, src, memory_bank, encoder_final):
+    def init_decoder_state(self, src, memory_bank, encoder_final, num_layers):
         def _fix_enc_hidden(h):
             # The encoder hidden is  (layers*directions) x batch x dim.
             # We need to convert it to layers x batch x (directions*dim).
@@ -337,10 +343,10 @@ class RNNDecoderBase(nn.Module):
         if isinstance(encoder_final, tuple):  # LSTM
             return RNNDecoderState(self.hidden_size,
                                    tuple([_fix_enc_hidden(enc_hid)
-                                         for enc_hid in encoder_final]))
+                                         for enc_hid in encoder_final]), num_layers)
         else:  # GRU
             return RNNDecoderState(self.hidden_size,
-                                   _fix_enc_hidden(encoder_final))
+                                   _fix_enc_hidden(encoder_final), num_layers)
 
 
 class StdRNNDecoder(RNNDecoderBase):
@@ -482,6 +488,8 @@ class InputFeedRNNDecoder(RNNDecoderBase):
         assert emb.dim() == 3  # len x batch x embedding_dim
 
         hidden = state.hidden
+        hidden1 = (hidden[0][0].unsqueeze(0),)
+        hidden2 = (hidden[0][1].unsqueeze(0),)
         coverage = state.coverage.squeeze(0) \
             if state.coverage is not None else None
 
@@ -489,11 +497,12 @@ class InputFeedRNNDecoder(RNNDecoderBase):
         # input at every time step.
         for i, emb_t in enumerate(emb.split(1)):
             emb_t = emb_t.squeeze(0)
-            decoder_input = torch.cat([emb_t, input_feed], 1)
+            decoder_input1 = torch.cat([emb_t, input_feed], 1)
 
-            rnn_output, hidden = self.rnn(decoder_input, hidden)
-            decoder_output, p_attn = self.attn(
-                rnn_output, memory_bank.transpose(0, 1),
+            rnn_output1, hidden1 = self.rnn1(decoder_input1, hidden1)
+            #rnn_output1 = rnn_output1 + emb_t
+            decoder_output1, p_attn = self.attn(
+                rnn_output1, memory_bank.transpose(0, 1),
                 memory_lengths=memory_lengths)
             if self.context_gate is not None:
                 # TODO: context gate should be employed
@@ -501,11 +510,15 @@ class InputFeedRNNDecoder(RNNDecoderBase):
                 decoder_output = self.context_gate(
                     decoder_input, rnn_output, decoder_output
                 )
-            decoder_output = self.dropout(decoder_output)
+            decoder_input2 = torch.cat([rnn_output1, decoder_output1], 1)
+            rnn_output2, hidden2 = self.rnn2(decoder_input2, hidden2)
+            #rnn_output2 = rnn_output2 + rnn_output1
+            decoder_output = self.dropout(rnn_output2)
             input_feed = decoder_output
 
             decoder_outputs += [decoder_output]
             attns["std"] += [p_attn]
+            hidden = (torch.cat([hidden1[0], hidden2[0]], 0),)
 
             # Update the coverage attention.
             if self._coverage:
@@ -583,7 +596,7 @@ class NMTModel(nn.Module):
 
         enc_final, memory_bank = self.encoder(src, lengths)
         enc_state = \
-            self.decoder.init_decoder_state(src, memory_bank, enc_final)
+            self.decoder.init_decoder_state(src, memory_bank, enc_final, self.decoder.num_layers)
         decoder_outputs, dec_state, attns = \
             self.decoder(tgt, memory_bank,
                          enc_state if dec_state is None
@@ -618,7 +631,7 @@ class DecoderState(object):
 
 
 class RNNDecoderState(DecoderState):
-    def __init__(self, hidden_size, rnnstate):
+    def __init__(self, hidden_size, rnnstate, num_layers):
         """
         Args:
             hidden_size (int): the size of hidden layer of the decoder.
@@ -630,12 +643,18 @@ class RNNDecoderState(DecoderState):
         else:
             self.hidden = rnnstate
         self.coverage = None
+        self.num_layers = num_layers
 
         # Init the input feed.
         batch_size = self.hidden[0].size(1)
         h_size = (batch_size, hidden_size)
         self.input_feed = Variable(self.hidden[0].data.new(*h_size).zero_(),
                                    requires_grad=False).unsqueeze(0)
+        zero = Variable(self.hidden[0].data.new(*h_size).zero_(),
+                                   requires_grad=True).unsqueeze(0)
+        for i in range(1, num_layers):
+            self.hidden = (torch.cat([self.hidden[0], zero], 0),)
+
 
     @property
     def _all(self):
@@ -849,7 +868,7 @@ class RNNTrigramDecoderBase(nn.Module):
 
         return decoder_outputs, state, attns
 
-    def init_decoder_state(self, src, memory_bank, encoder_final):
+    def init_decoder_state(self, src, memory_bank, encoder_final, num_layers):
         def _fix_enc_hidden(h):
             # The encoder hidden is  (layers*directions) x batch x dim.
             # We need to convert it to layers x batch x (directions*dim).
@@ -860,10 +879,10 @@ class RNNTrigramDecoderBase(nn.Module):
         if isinstance(encoder_final, tuple):  # LSTM
             return RNNDecoderState(self.hidden_size,
                                    tuple([_fix_enc_hidden(enc_hid)
-                                         for enc_hid in encoder_final]))
+                                         for enc_hid in encoder_final]), num_layers)
         else:  # GRU
             return RNNDecoderState(self.hidden_size,
-                                   _fix_enc_hidden(encoder_final))
+                                   _fix_enc_hidden(encoder_final), num_layers)
 
 class InputFeedTrigramRNNDecoder(RNNTrigramDecoderBase):
     """
@@ -1045,7 +1064,7 @@ class NMTTrigramModel(nn.Module):
 
         enc_final, memory_bank = self.encoder(src, lengths, batch_size=batch_size)
         enc_state = Variable(enc_final[0].data.new(enc_final[0].size()).zero_().unsqueeze(0).repeat(self.decoder.num_layers, 1, 2))
-        enc_state = RNNDecoderState(self.decoder.hidden_size, enc_state)
+        enc_state = RNNDecoderState(self.decoder.hidden_size, enc_state, self.decoder.num_layers)
             #self.decoder.init_decoder_state(src, memory_bank, enc_final)
         self.decoder.batch_size = batch_size
         decoder_outputs, dec_state, attns = \
